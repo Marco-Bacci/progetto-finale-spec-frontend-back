@@ -93,3 +93,6 @@ Non modificare direttamente il file `schema.js` in quanto verrà sovrascritto ad
 - Il server utilizza CORS abilitato, quindi può ricevere richieste da qualsiasi origine
 - Tutte le risposte sono in formato JSON
 - Gli errori vengono restituiti con codici HTTP appropriati e messaggi descrittivi
+
+
+
