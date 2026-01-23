@@ -19,9 +19,33 @@ app.use(
     skip: (req) => req.method === "OPTIONS",
   }),
 );
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://audiospecs-demo.vercel.app",
+  "https://progetto-finale-spec-frontend-front-bice.vercel.app", // il tuo attuale
+];
+
 app.use(
   cors({
-    origin: ["https://audiospecs-demo.vercel.app", "http://localhost:5173"],
+    origin: (origin, callback) => {
+      // origin può essere undefined (es. Postman / server-to-server)
+      if (!origin) return callback(null, true);
+
+      // consenti esattamente quelli in lista
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+
+      // consenti anche tutti i preview di Vercel del tuo progetto (comodo)
+      if (
+        /^https:\/\/progetto-finale-spec-frontend-front-.*\.vercel\.app$/.test(
+          origin,
+        )
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   }),
 );
