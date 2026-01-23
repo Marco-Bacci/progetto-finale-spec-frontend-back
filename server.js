@@ -11,20 +11,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(
   morgan("dev", {
     skip: (req) => req.method === "OPTIONS",
-  })
+  }),
 );
 app.use(
   cors({
-    origin: "*",
-    credentials: true,
-  })
+    origin: ["https://audiospecs-demo.vercel.app", "http://localhost:5173"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  }),
 );
+
 app.use(express.json({ limit: "Infinity" }));
 
 // **CACHE in memoria** for each resource type
@@ -111,7 +112,7 @@ const loadData = async (type) => {
           // Verifica che i dati caricati siano in formato array
           if (!Array.isArray(loadedData)) {
             throw new Error(
-              `Errore di struttura nel file ${type}.json: il file deve contenere un array.`
+              `Errore di struttura nel file ${type}.json: il file deve contenere un array.`,
             );
           } else {
             // Valida ogni elemento nell'array usando il validator appropriato
@@ -149,7 +150,7 @@ const loadData = async (type) => {
           }
         } catch (parseError) {
           throw new Error(
-            `Errore di sintassi JSON nel file ${type}.json:\n${parseError.message}\nControlla la sintassi del file e assicurati che sia un JSON valido.`
+            `Errore di sintassi JSON nel file ${type}.json:\n${parseError.message}\nControlla la sintassi del file e assicurati che sia un JSON valido.`,
           );
         }
       } else {
@@ -175,7 +176,7 @@ const saveData = async (type) => {
         await fs.writeFile(
           dataFile,
           JSON.stringify(cache[type], null, 2),
-          "utf-8"
+          "utf-8",
         );
         console.log(`Dati salvati in ${type}.json.`);
       } catch (error) {
@@ -223,12 +224,10 @@ const loadPromises = resourceTypes.map((type) => {
     const itemId = parseInt(req.params.id);
     const item = cache[type].find((p) => p.id === itemId);
     if (!item) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `${type} with id '${itemId}' not found.`,
-        });
+      return res.status(404).json({
+        success: false,
+        message: `${type} with id '${itemId}' not found.`,
+      });
     }
     res.json({ success: true, [type]: item });
   });
@@ -238,12 +237,10 @@ const loadPromises = resourceTypes.map((type) => {
     const itemId = parseInt(req.params.id);
     const itemIndex = cache[type].findIndex((p) => p.id === itemId);
     if (itemIndex === -1) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `${type} with id '${itemId}' not found.`,
-        });
+      return res.status(404).json({
+        success: false,
+        message: `${type} with id '${itemId}' not found.`,
+      });
     }
     const oldItem = cache[type][itemIndex];
 
@@ -257,7 +254,7 @@ const loadPromises = resourceTypes.map((type) => {
     // Check if any readonly properties are being updated
     const typeReadonlyProps = readonlyProperties[type] || [];
     const readonlyAttemptsToUpdate = Object.keys(updatedFields).filter((key) =>
-      typeReadonlyProps.includes(key)
+      typeReadonlyProps.includes(key),
     );
 
     if (readonlyAttemptsToUpdate.length > 0) {
@@ -267,7 +264,7 @@ const loadPromises = resourceTypes.map((type) => {
         details: {
           readonly: readonlyAttemptsToUpdate,
           message: `The following properties are readonly and cannot be updated: ${readonlyAttemptsToUpdate.join(
-            ", "
+            ", ",
           )}`,
         },
       });
@@ -306,12 +303,10 @@ const loadPromises = resourceTypes.map((type) => {
     const itemId = parseInt(req.params.id);
     const filteredItems = cache[type].filter((p) => p.id !== itemId);
     if (filteredItems.length === cache[type].length) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `${type} with id '${itemId}' not found.`,
-        });
+      return res.status(404).json({
+        success: false,
+        message: `${type} with id '${itemId}' not found.`,
+      });
     }
 
     cache[type] = filteredItems;
@@ -329,7 +324,7 @@ const loadPromises = resourceTypes.map((type) => {
       filteredItems = filteredItems.filter(
         (item) =>
           item.category &&
-          item.category.toLowerCase() === category.toLowerCase()
+          item.category.toLowerCase() === category.toLowerCase(),
       );
     }
 
@@ -337,19 +332,21 @@ const loadPromises = resourceTypes.map((type) => {
     if (search) {
       filteredItems = filteredItems.filter(
         (item) =>
-          item.title && item.title.toLowerCase().includes(search.toLowerCase())
+          item.title && item.title.toLowerCase().includes(search.toLowerCase()),
       );
     }
 
     res.json(
-      filteredItems.map(({ id, createdAt, updatedAt, title, category, imageUrl }) => ({
-        id,
-        createdAt,
-        updatedAt,
-        title,
-        category,
-        imageUrl
-      }))
+      filteredItems.map(
+        ({ id, createdAt, updatedAt, title, category, imageUrl }) => ({
+          id,
+          createdAt,
+          updatedAt,
+          title,
+          category,
+          imageUrl,
+        }),
+      ),
     );
   });
 
@@ -371,7 +368,7 @@ Promise.all(loadPromises)
   .catch((error) => {
     console.error(`\n${error.message}`);
     console.error(
-      "\n⚠️ Il server non è stato avviato a causa degli errori sopra indicati."
+      "\n⚠️ Il server non è stato avviato a causa degli errori sopra indicati.",
     );
     process.exit(1); // Termina il processo con un codice di errore
   });
